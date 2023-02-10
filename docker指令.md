@@ -1,17 +1,3 @@
-
-
-[frp](https://frp.tyu.wiki/)
-
-[nacos](https://nacos.tyu.wiki/nacos/) 
-
-[gitlab](https://gitlab.tyu.wiki/users/sign_in) 
-
-[jenkins](https://jenkins.tyu.wiki/login?from=%2F) 
-
-[rabbitmq](https://rabbitmqui.tyu.wiki/) 
-
-
-
 ## 开机
 
 ```shell
