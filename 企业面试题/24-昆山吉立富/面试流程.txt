@@ -1,0 +1,6 @@
+集成，多态，重写，重载的概念
+		分库分表如何使用，可列举场景
+		索引的用法与好处
+		Hashmap，hashtable，hashset，treeset的区别
+		Springmvc的工作流程
+		Spring的优势

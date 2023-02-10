@@ -1,0 +1,23 @@
+
+java Nio 通信与Bio通信主要不同点:
+
+1.Nio中的单个channel即可支持读操作也可以支持写操作,而bio中读操作要用inputstream,写操作要outputstream.
+
+2.nio 采用byteBuffer 作为内存缓存区,向channel里写或者度操作,bio基本是用byte[]
+
+3.nio采用 selector组件轮询读取就绪channel
+
+
+
+1.客户端需要进行 ch.finishiCnonnect()操作,否则两边都阻塞着
+
+2.读channel中的bytebuffer时, while((len=ch.read(buffer))!=0) 判断不要写成while((len=ch.read(buffer))!=-1) 
+
+如果SocketChannel被设置为非阻塞，则它的read操作可能返回三个值：
+1) 大于0，表示读取到了字节数；
+2) 等于0，没有读取到消息，可能TCP处于Keep-Alive状态，接收到的是TCP握手消息；
+3) -1，连接已经被对方合法关闭。
+
+
+sk.interestOps(sk.interestOps()& ~SelectionKey.OP_READ);  //取消一个read事件
+sk.interestOps(sk.interestOps()| SelectionKey.OP_READ);  //更新一个read事件

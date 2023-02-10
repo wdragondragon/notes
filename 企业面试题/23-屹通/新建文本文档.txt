@@ -1,0 +1,7 @@
+笔试：
+1.map有哪些，如何遍历
+2.synchoized使用的几种方式
+3.jvm内存模型，画出来
+4.linkedlist和arraylist的区别
+面试：依托简历问，主要就是多线程，安全方面
+	  Jiava基础:基本数据
