@@ -145,6 +145,34 @@ curl -XPOST localhost:9400/dwd_yj_safe_company/_doc/_delete_by_query?pretty -H '
 
 
 
+
+
+```
+创建Pipeline
+PUT _ingest/pipeline/test_pipeline
+{
+  "description" : "这是测试的管道内容",
+  "processors" : [
+    {
+      "set" : {
+        "field": "name",
+        "value": "这是管道默认数据"
+      }
+    }
+  ]
+}
+
+
+# 获取管道信息
+GET _ingest/pipeline/test_pipeline
+
+
+```
+
+
+
+
+
 curl -X PUT -u'sxdi:sxdi@2021' http://100.76.74.145:9200/test_1?pretty -H 'Content-Type: application/json' -d '{"mappings":{"properties":{"id":{"type":"long","index":"true"},"code":{"type":"text","index":"true"}}}}'
 
 

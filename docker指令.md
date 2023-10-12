@@ -206,7 +206,7 @@ hfdba:aAswabc.gzEA951753
 create user 'hfdba'@'%' IDENTIFIED BY 'aAswabc.gzEA951753';
 GRANT ALL ON haofangerp.* TO 'hfdba'@'%';
 
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'aAswabc.gzEA951753' WITH GRANT OPTION; #授权任意地方可登录root用户 并权限具有传递性
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'Zhjl951753.' WITH GRANT OPTION; #授权任意地方可登录root用户 并权限具有传递性
 
 FLUSH PRIVILEGES
 
@@ -320,6 +320,7 @@ docker-compose -f example/standalone-derby.yaml up
 docker-compose -f example/standalone-mysql.yaml up
 #集群模式
 docker-compose -f example/cluster-hostname.yaml up 
+docker-compose -f /usr/local/src/nacos-docker/example/cluster-hostname.yaml up -d
 ```
 
 
@@ -513,22 +514,22 @@ jdragon：Zhjl.postgres
 docker pull elasticsearch:7.12.0
 docker pull kibana:7.12.0
 
-docker network create es_default
+docker network create es7
 
 #无映射卷启动
-docker run --name es -p 9200:9200 -p 9300:9300 \
+docker run --name es7 -p 9200:9200 -p 9300:9300 \
 -e "discovery.type=single-node" \
 -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
 -d elasticsearch:7.12.0
 
-docker cp es:/usr/share/elasticsearch/config /var/data/es/
-docker cp es:/usr/share/elasticsearch/data /var/data/es/
-docker cp es:/usr/share/elasticsearch/plugins /var/data/es/
-docker stop es
-docker rm es
+docker cp es7:/usr/share/elasticsearch/config /var/data/es7/
+docker cp es7:/usr/share/elasticsearch/data /var/data/es7/
+docker cp es7:/usr/share/elasticsearch/plugins /var/data/es7/
+docker stop es7
+docker rm es7
 
 #映射卷启动
-docker run --name es --net es_default -p 9200:9200 -p 9300:9300 \
+docker run --name es7 --net es7 -p 9200:9200 -p 9300:9300 \
 -e "discovery.type=single-node" \
 -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
 -v /var/data/es/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml \
@@ -537,8 +538,8 @@ docker run --name es --net es_default -p 9200:9200 -p 9300:9300 \
 -d elasticsearch:7.12.0
 
 
-docker run -d --name kibana --net es_default \
--e ELASTICSEARCH_HOSTS=http://es:9200 \
+docker run -d --name kibana --net es7 \
+-e ELASTICSEARCH_HOSTS=http://es7:9200 \
 -p 5601:5601 kibana:7.12.0
 
 
@@ -548,9 +549,9 @@ docker run -d --name kibana --net es_default \
 docker pull elasticsearch:6.8.23
 docker pull kibana:6.8.23
 
-docker network create es_default
+docker network create es6
 #无映射卷启动
-docker run --name es6 -p 9200:9200 -p 9300:9300 \
+docker run --name es6 -p 9201:9200 -p 9301:9300 \
 -e "discovery.type=single-node" \
 -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
 -d elasticsearch:6.8.23
@@ -562,7 +563,7 @@ docker stop es6
 docker rm es6
 
 #映射卷启动
-docker run --name es6 --net es_default -p 9200:9200 -p 9300:9300 \
+docker run --name es6 --net es6 -p 9201:9200 -p 9301:9300 \
 -e "discovery.type=single-node" \
 -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
 -v /var/data/es6/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml \
@@ -571,9 +572,9 @@ docker run --name es6 --net es_default -p 9200:9200 -p 9300:9300 \
 -d elasticsearch:6.8.23
 
 
-docker run -d --name kibana6 --net es_default \
+docker run -d --name kibana6 --net es6 \
 -e ELASTICSEARCH_HOSTS=http://es6:9200 \
--p 5601:5601 kibana:6.8.23
+-p 5602:5601 kibana:6.8.23
 ```
 
 
@@ -587,10 +588,10 @@ git clone https://github.com/wurstmeister/kafka-docker.git
 #创建一个topic，名为topic001，4个partition，副本因子2。
 docker exec kafka-docker_kafka_1 \
 kafka-topics.sh \
---create --topic topic001 \
---partitions 4 \
+--create --topic transactions \
+--partitions 1 \
 --zookeeper zookeeper:2181 \
---replication-factor 2
+--replication-factor 1
 
 
 #执行以下命令查看刚刚创建的topic
@@ -599,7 +600,13 @@ kafka-topics.sh --list \
 --zookeeper zookeeper:2181 \
 stream-in
 
-#查看刚刚创建的topic的情况，borker和副本情况一目了然
+#删除topic
+docker exec kafka-docker_kafka_1 \
+kafka-topics.sh \
+--delete \
+--topic transactions \
+--zookeeper zookeeper:2181
+
 docker exec kafka-docker_kafka_1 \
 kafka-topics.sh \
 --describe \
@@ -616,7 +623,7 @@ kafka-console-consumer.sh \
 #消费
 docker exec -it kafka-docker_kafka_1 \
 kafka-console-producer.sh \
---topic stream-in \
+--topic transactions \
 --broker-list kafka-docker_kafka_1:9092
 
 ```
@@ -672,13 +679,19 @@ nginx:latest
 
 ```dockerfile
 #https://registry.hub.docker.com/r/godmeowicesun/kingbase
-#https://www.kingbase.com.cn/index/download/c_id/401.html
+
+#授权文件地址，下载授权文件，重命名为license.dat
+#https://www.kingbase.com.cn/sqwjxz/index.htm
 docker pull godmeowicesun/kingbase
-mkdir -p /opt/docker/kingbase-latest/opt
-chmod 777 /opt/docker/kingbase-latest/opt
-mkdir -p /opt/docker/kingbase-latest/opt/license
-cp license.dat /opt/docker/kingbase-latest/opt/license/
-docker run -d -it --privileged=true -p 14321:54321 -v /opt/docker/kingbase-latest/opt:/opt --name kingbase-rv1 godmeowicesun/kingbase:latest
+mkdir -p /var/data/kingbase/opt
+chmod 777 /var/data/kingbase/opt
+mkdir -p /var/data/kingbase/opt/license
+cp license.dat /var/data/kingbase/opt/license/
+docker run -d -it --privileged=true -p 14321:54321 -v /var/data/kingbase/opt:/opt --name kingbase-rv1 godmeowicesun/kingbase:latest
+
+# 注意，如果使用开发版license，需要修改配置文件中
+max_connections=10
+superuser_reserved_connections=0
 
 #端口: 14321
 #用户名: SYSTEM
@@ -691,9 +704,24 @@ docker run -d -it --privileged=true -p 14321:54321 -v /opt/docker/kingbase-lates
 ## GBase8a
 
 ```dockerfile
-`#https://hub.docker.com/r/shihd/gbase8a
+#https://hub.docker.com/r/shihd/gbase8a
 docker pull shihd/gbase8a:1.0
-docker run -itd -p5258:5258 --name gbase8a shihd/gbase8a:1.0
+docker run -itd -p 5258:5258 --name gbase8a shihd/gbase8a:1.0
+
+# 启动时发现无法启动。内存不足
+#[ERROR] /home/gbase/GBase/server/bin/gbased: Gbase general error: Memory manager is unable to allocate specified amount of memory
+
+# 将gbase挂载出来，修改config
+docker cp gbase8a:/home/gbase /var/data/gbase
+vim /var/data/gbase/GBase/config/gbase_8a_gbase8a.cnf
+
+# 修改以下配置
+gbase_heap_data=1G
+gbase_heap_temp=256M
+gbase_heap_large=256M
+
+#挂载目录，重启gbase
+docker run -itd -p 5258:5258 -v /var/data/gbase:/home/gbase --name gbase8a shihd/gbase8a:1.0
 
 DB: gbase
 User: root
@@ -751,6 +779,8 @@ docker pull ibmoms/db2
 
 docker run -itd --name mydb2 --privileged=true -p 50000:50000 -e LICENSE=accept -e DB2INST1_PASSWORD=db2@123 -e DBNAME=testdb -v /var/data/db2:/database ibmcom/db2
 
+
+
 db2inst1/db2@123
 
 
@@ -792,13 +822,17 @@ docker pull clickhouse/clickhouse-server:21.12.3
 # 拉取 client 镜像
 docker pull clickhouse/clickhouse-client:21.12.3
 
-
 docker run -d --name temp-clickhouse-server -p 8123:8123 --ulimit nofile=262144:262144 clickhouse/clickhouse-server:21.12.3
 
+docker cp temp-clickhouse-server:/etc/clickhouse-server ./config
+docker cp temp-clickhouse-server:/var/log/clickhouse-server ./log
+docker stop temp-clickhouse-server
+
 docker run -d \
- --name=single-clickhouse-server \
+ --name=clickhouse-server \
  -p 18123:8123 -p 19000:9000 -p 19009:9009 \
  --ulimit nofile=262144:262144 \
+ --platform linux/amd64 \
  -v /var/data/clickhouse/data:/var/lib/clickhouse:rw \
  -v /var/data/clickhouse/config:/etc/clickhouse-server:rw \
  -v /var/data/clickhouse/log:/var/log/clickhouse-server:rw \
@@ -806,6 +840,7 @@ docker run -d \
  -e CLICKHOUSE_USER=test \
  -e CLICKHOUSE_PASSWORD=test \
  clickhouse/clickhouse-server:21.12.3
+ 
 
 
 docker run -it --rm \
@@ -992,8 +1027,8 @@ https:
 
 
 ## 执行install
-./prepare
-./install.sh
+/usr/local/src/harbor/harbor/prepare
+/usr/local/src/harbor/harbor/install.sh
 ```
 
 
@@ -1063,4 +1098,248 @@ EOF
 # 使用nerdctl登录harbor https
 nerdctl login -u admin harbor.jdragon.club:11843
 ```
+
+
+
+
+
+
+
+java -server -jar -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/bmdata/software/headdump-XX:+PrintHeapAtGC -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=20M -Xloggc:/bmdata/software/gclog/gc_%t.log 
+
+
+
+
+
+## jdk17 打包jre
+
+```
+打印使用的模块
+.\bin\jdeps.exe --list-deps D:\dev\IdeaProjects\jdk17-hello-world\target\jdk17-hello-world-1.0-SNAPSHOT.jar
+
+
+@echo off
+setlocal enabledelayedexpansion
+
+set PROJECT_PATH=%1
+set JRE_OUTPUT_PATH=%2
+
+set MODULE_LIST=
+for /f "tokens=* delims=" %%i in ('.\bin\jdeps.exe --list-deps %PROJECT_PATH%') do (
+  set "MODULE_LIST=!MODULE_LIST! %%i"
+)
+
+echo .\bin\jlink --module-path .\bin\jmods --add-modules %MODULE_LIST% --output %JRE_OUTPUT_PATH%
+.\bin\jlink --module-path .\bin\jmods --add-modules %MODULE_LIST% --output %JRE_OUTPUT_PATH%
+
+PAUSE
+
+
+.\package.bat D:\dev\IdeaProjects\jdk17-hello-world\target\jdk17-hello-world-1.0-SNAPSHOT.jar .\jre17
+
+
+
+```
+
+
+
+
+
+## Hana
+
+```
+hxeadm 系统密码  Zhjl.hana
+hana 数据库SYSTEM密码  Zhjl951753
+ADMIN密码 Hanatest123
+
+```
+
+
+
+
+
+
+
+## zookeeper+kafka
+
+```bash
+mv apache-zookeeper-3.8.1-bin /usr/local/zookeeper
+mkdir -p /var/lib/zoopkeeper
+cat > /usr/local/zookeeper/conf/zoo.cfg << EOF
+tickTime=2000
+dataDir=/var/lib/zookeeper
+clientPort=2181
+EOF
+
+
+
+# 启动zk
+/usr/local/zookeeper/bin/zkServer.sh start
+
+# 启动kafka
+/usr/local/kafka/bin/kafka-server-start.sh -daemon /usr/local/kafka/config/server.properties
+```
+
+
+
+
+
+## HBase
+
+https://archive.apache.org/dist/hbase/2.2.3/
+
+hbase-site.xml
+
+```xml
+<configuration>
+  <property>
+    <name>hbase.rootdir</name>
+    <value>hdfs://centos1:8020/hbase</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.quorum</name>
+    <value>centos1</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.property.dataDir</name>
+    <value>/opt/hbase/zookeeper</value>
+  </property>
+  <property>
+    <name>hbase.cluster.distributed</name>
+    <value>true</value>           
+  </property>
+</configuration>
+```
+
+
+
+hbase-env.sh添加以下内容：
+
+不使用hadoop的依赖，防止slf4j依赖冲突
+
+不使用hbase自带的zookeeper
+
+```
+export HBASE_DISABLE_HADOOP_CLASSPATH_LOOKUP="true"
+export HBASE_MANAGES_ZK=false
+```
+
+
+
+.$HBASE_HOME/bin/start-hbase.sh
+
+注意如果设置后如果启动后依然报错如下：
+
+`Could not start ZK at requested port of 2181.  ZK was started at port: 2182.  Aborting as clients (e.g. shell) will not be able to find this ZK quorum.`
+
+很明显,这是启动自带zookeeper与独立zookeeper冲突了。因为把hbase.cluster.distributed设置为false,也就是让hbase以standalone模式运行时,依然会去启动自带的zookeeper。
+
+需要做以下配置
+
+vim conf/hbase-site.xml
+
+```xml
+<property>
+  <name>hbase.cluster.distributed</name>
+  <value>true</value> 
+</property>
+```
+
+
+
+启动成功后可使用jps看到以下两个子进程：HMaster，HRegionServer
+
+管理页面：localhost:16010
+
+
+
+
+
+## JuiceFS
+
+```bash
+juicefs format --storage oss --bucket http://192.168.1.150:9000/myjfs --access-key minioadmin --secret-key minioadmin redis://192.168.1.150:9736/15 myjfs
+
+#运行在nssm服务中。windows中不支持backgroud运行
+juicefs mount --cache-dir D:\juicefs\minio --cache-size 512000 redis://192.168.1.150:9736/15 Z:
+```
+
+
+
+```shell
+#初始化数据库脚本
+# scm
+CREATE DATABASE scm DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+GRANT ALL ON scm.* TO 'scm'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# amon
+CREATE DATABASE amon DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+GRANT ALL ON amon.* TO 'amon'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# rman
+CREATE DATABASE rman DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+GRANT ALL ON rman.* TO 'rman'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# hue
+CREATE DATABASE hue DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci; 
+GRANT ALL ON hue.* TO 'hue'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# hive
+CREATE DATABASE metastore DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+GRANT ALL ON metastore.* TO 'hive'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# sentry
+CREATE DATABASE sentry DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;   
+GRANT ALL ON sentry.* TO 'sentry'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# nav
+CREATE DATABASE nav DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;      
+GRANT ALL ON nav.* TO 'nav'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# navms
+CREATE DATABASE navms DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+GRANT ALL ON navms.* TO 'navms'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# oozie
+CREATE DATABASE oozie DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+GRANT ALL ON oozie.* TO 'oozie'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+#hive
+CREATE DATABASE hive DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+GRANT ALL ON hive.* TO 'hive'@'%' IDENTIFIED BY 'Zhjl951753.';
+
+# flush
+FLUSH PRIVILEGES;
+SHOW DATABASES;
+
+# 主节点
+yum install cloudera-manager-daemons cloudera-manager-agent cloudera-manager-server
+
+#其他节点
+yum install cloudera-manager-daemons cloudera-manager-agent
+yum install cloudera-manager-daemons cloudera-manager-agent
+
+
+# 所有节点
+sed -i "s/server_host=localhost/server_host=centos1/g" /etc/cloudera-scm-agent/config.ini
+xsync /etc/cloudera-scm-agent/config.ini
+systemctl start cloudera-scm-agent
+
+
+
+#主节点
+/opt/cloudera/cm/schema/scm_prepare_database.sh mysql scm scm Zhjl951753.
+
+systemctl start cloudera-scm-server
+
+tail -f /var/log/cloudera-scm-server/cloudera-scm-server.log
+```
+
+
+
+
+
+
+
+
 
